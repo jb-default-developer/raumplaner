@@ -1,17 +1,9 @@
 .logout-button{
-    position: absolute;
-    top: 10px;
-    left: 10px;
-}
-
-.home {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(
-    45deg,
-    #b9139d,
-    #750589,
-    #370cd2,
-    )
+    width: 80px;
+    height: 32px;
+    font-size: 14px;
+    border-radius: 6px;
+    background-color: rgb(255, 255, 255);
+    color: rgb(143, 68, 156);
+    border: 1px solid rgb(143, 68, 156);
 }

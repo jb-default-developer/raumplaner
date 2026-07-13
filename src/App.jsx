@@ -21,9 +21,12 @@ function App() {
     return <Home />;
   }
   return (
-    <div>
+    <div className="login-button" >
+      <h1>JOHNNYBYTES RAUMPLANER</h1>
+      <div className="inputs">
       <input  placeholder="Username" onChange={(e) => setUsername(e.target.value)} />
       <input  placeholder="Password" type="password" onChange={(e) => setPassword(e.target.value)} />
+      </div>
       <button onClick={handleLogin}>Login</button>
     </div>
   )
