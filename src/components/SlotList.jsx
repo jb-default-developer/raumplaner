@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import BookingForm from "./BookingForm.jsx";
 
 // Einheitlicher localStorage-Key für alle Buchungen.
 const BOOKINGS_STORAGE_KEY = "raumplaner_bookings";
@@ -39,6 +40,8 @@ export default function SlotList({ room = "", date = new Date() }) {
     });
     const [startTime, setStartTime] = useState("09:00");
     const [endTime, setEndTime] = useState("09:30");
+    const [pendingBooking, setPendingBooking] = useState(null);
+    const [selectedBooking, setSelectedBooking] = useState(null);
 
     // Jede Änderung an den Buchungen wird direkt in LocalStorage gespeichert.
     useEffect(() => {
@@ -60,7 +63,7 @@ export default function SlotList({ room = "", date = new Date() }) {
             return timeToMinutes(leftRange.startTime) - timeToMinutes(rightRange.startTime);
         });
 
-    function bookSlot() {
+    function openBookingForm() {
         const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
         const startMinutes = timeToMinutes(startTime);
         const endMinutes = timeToMinutes(endTime);
@@ -89,21 +92,40 @@ export default function SlotList({ room = "", date = new Date() }) {
         }
 
         const slotLabel = formatSlotLabel(startTime, endTime);
-        const confirmed = confirm(`Slot ${slotLabel} als ${loggedInUser.username} buchen?`);
-        if (!confirmed) return;
+        setPendingBooking({
+            slotLabel,
+            dateKey,
+            room,
+            user: loggedInUser.username,
+            startTime,
+            endTime,
+        });
+    }
+
+    function submitBookingDetails(details) {
+        if (!pendingBooking) {
+            return;
+        }
 
         setBookings((currentBookings) => [
             ...currentBookings,
             {
-                time: slotLabel,
-                startTime,
-                endTime,
-                user: loggedInUser.username,
-                date: dateKey,
-                room,
+                time: pendingBooking.slotLabel,
+                startTime: pendingBooking.startTime,
+                endTime: pendingBooking.endTime,
+                user: pendingBooking.user,
+                date: pendingBooking.dateKey,
+                room: pendingBooking.room,
+                title: details.title,
+                description: details.description,
             },
         ]);
+        setPendingBooking(null);
         setEndTime(startTime);
+    }
+
+    function closeBookingForm() {
+        setPendingBooking(null);
     }
 
     function unbookSlot(booking) {
@@ -119,7 +141,23 @@ export default function SlotList({ room = "", date = new Date() }) {
         if (!confirmed) return;
 
         // Entfernt genau die Buchung, die zu Raum, Tag, User und Zeitfenster passt.
-        setBookings(bookings.filter((b) => !(b.time === booking.time && b.date === booking.date && b.room === booking.room && b.user === booking.user)));
+        setBookings(
+            bookings.filter(
+                (b) => !(
+                    b.time === booking.time &&
+                    b.date === booking.date &&
+                    b.room === booking.room &&
+                    b.user === booking.user &&
+                    (b.title || "") === (booking.title || "") &&
+                    (b.description || "") === (booking.description || "")
+                )
+            )
+        );
+        setSelectedBooking(null);
+    }
+
+    function openBookingDetails(booking) {
+        setSelectedBooking(booking);
     }
 
     return (
@@ -144,7 +182,7 @@ export default function SlotList({ room = "", date = new Date() }) {
                         onChange={(event) => setEndTime(event.target.value)}
                     />
                 </label>
-                <button type="button" className="slot-create" onClick={bookSlot}>
+                <button type="button" className="slot-create" onClick={openBookingForm}>
                     Zeitslot buchen
                 </button>
             </div>
@@ -154,13 +192,61 @@ export default function SlotList({ room = "", date = new Date() }) {
             ) : (
                 roomBookings.map((booking) => (
                     <div
-                        key={`${booking.room}-${booking.date}-${booking.user}-${booking.time}`}
-                        onClick={() => unbookSlot(booking)}
+                        key={`${booking.room}-${booking.date}-${booking.user}-${booking.time}-${booking.title || "untitled"}`}
+                        onClick={() => openBookingDetails(booking)}
                         className="slot booked"
                     >
-                        {booking.time} - Belegt von {booking.user} (Klicken zum Entfernen)
+                        {booking.time} - {booking.title || "Ohne Titel"} - Belegt von {booking.user}
                     </div>
                 ))
+            )}
+
+            {pendingBooking && (
+                <BookingForm
+                    slotLabel={pendingBooking.slotLabel}
+                    onCancel={closeBookingForm}
+                    onSubmit={submitBookingDetails}
+                />
+            )}
+
+            {selectedBooking && (
+                <div className="booking-modal-backdrop" role="presentation" onClick={() => setSelectedBooking(null)}>
+                    <div
+                        className="booking-modal"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Buchungsdetails"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <h3>{selectedBooking.title || "Ohne Titel"}</h3>
+                        <p className="booking-modal-slot">{selectedBooking.time}</p>
+                        <p>Raum: {selectedBooking.room}</p>
+                        <p>Datum: {selectedBooking.date}</p>
+                        <p>Gebucht von: {selectedBooking.user}</p>
+                        {selectedBooking.description ? (
+                            <p>Beschreibung: {selectedBooking.description}</p>
+                        ) : (
+                            <p>Keine Beschreibung hinterlegt.</p>
+                        )}
+
+                        <div className="booking-form-actions">
+                            <button
+                                type="button"
+                                className="booking-cancel"
+                                onClick={() => setSelectedBooking(null)}
+                            >
+                                Schliessen
+                            </button>
+                            <button
+                                type="button"
+                                className="booking-remove"
+                                onClick={() => unbookSlot(selectedBooking)}
+                            >
+                                Buchung entfernen
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

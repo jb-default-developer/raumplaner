@@ -26,13 +26,18 @@ function App() {
 
   // Login-Seite, solange kein aktiver Nutzer angemeldet ist.
   return (
-    <div className="login-button" >
-      <h1>JOHNNYBYTES RAUMPLANER</h1>
-      <div className="inputs">
-      <input  placeholder="Username" onChange={(e) => setUsername(e.target.value)} />
-      <input  placeholder="Password" type="password" onChange={(e) => setPassword(e.target.value)} />
-      </div>
-      <button onClick={handleLogin}>Login</button>
+    <div className="login-page">
+      <header className="login-banner">
+        <h1>JOHNNYBYTES RAUMPLANER</h1>
+      </header>
+
+      <main className="login-card">
+        <div className="inputs">
+          <input placeholder="Username" onChange={(e) => setUsername(e.target.value)} />
+          <input placeholder="Password" type="password" onChange={(e) => setPassword(e.target.value)} />
+        </div>
+        <button onClick={handleLogin}>Login</button>
+      </main>
     </div>
   )
 }

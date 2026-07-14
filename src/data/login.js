@@ -6,7 +6,7 @@ export function login(username, password) {
     
     if (user) {
         // Speichert den eingeloggten Nutzer für spätere Seitenaufrufe.
-        localStorage.setItem('loggedInUser', JSON.stringify(user));
+        localStorage.setItem('loggedInUser', JSON.stringify({ username: user.username }));
         return true;
     } else {
         return false;

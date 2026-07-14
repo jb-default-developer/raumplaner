@@ -20,7 +20,7 @@ function Home() {
     }
 
     return (
-   
+
         <div className="content">
             <Header onLogout={logout}></Header>
             <h1>Willkommen, {user.username}!</h1>

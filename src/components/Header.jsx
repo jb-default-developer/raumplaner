@@ -2,8 +2,15 @@ import '../Header.css';
 
 function Header({ onLogout }) {
     // Zeigt den aktuell angemeldeten Nutzer in der Kopfzeile.
-    const user = JSON.parse(localStorage.getItem('loggedInUser'));
-
+    const user = (() => {
+         try {
+             const raw = localStorage.getItem('loggedInUser');
+             return raw ? JSON.parse(raw) : null;
+         } catch {
+             return null;
+         }
+     })();
+     
     return (
         <div className="header">
             <h1>Raumplaner</h1>

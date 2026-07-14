@@ -4,7 +4,6 @@ export const users = [
     username: "Maya Kilbertus",
     password: "password123",
 },
-
 {
     username: "Thorsten Wesseler",
     password: "password456",
