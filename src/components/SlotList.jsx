@@ -2,11 +2,29 @@ import { useEffect, useState } from "react";
 
 // Einheitlicher localStorage-Key für alle Buchungen.
 const BOOKINGS_STORAGE_KEY = "raumplaner_bookings";
-const slots = [];
 
-// Erzeugt die sichtbaren Zeitfenster (09:00 bis 17:30).
-for (let i = 9; i <= 17; i++) {
-    slots.push(`Von ${i.toString().padStart(2, "0")}:00 bis ${i.toString().padStart(2, "0")}:30 `);
+// neue Buchungen mit start/endTime und alte Buchungen, die nur den Anzeigetext gespeichert haben.
+function getBookingRange(booking) {
+    if (booking.startTime && booking.endTime) {
+        return { startTime: booking.startTime, endTime: booking.endTime };
+    }
+
+    const match = booking.time?.match(/(\d{2}:\d{2}).*(\d{2}:\d{2})/);
+    if (!match) {
+        return null;
+    }
+
+    return { startTime: match[1], endTime: match[2] };
+}
+
+// Mit Minuten rechnen.
+function timeToMinutes(value) {
+    const [hours, minutes] = value.split(":").map(Number);
+    return hours * 60 + minutes;
+}
+
+function formatSlotLabel(startTime, endTime) {
+    return `Von ${startTime} bis ${endTime}`;
 }
 
 export default function SlotList({ room = "", date = new Date() }) {
@@ -19,6 +37,8 @@ export default function SlotList({ room = "", date = new Date() }) {
             return [];
         }
     });
+    const [startTime, setStartTime] = useState("09:00");
+    const [endTime, setEndTime] = useState("09:30");
 
     // Jede Änderung an den Buchungen wird direkt in LocalStorage gespeichert.
     useEffect(() => {
@@ -26,12 +46,64 @@ export default function SlotList({ room = "", date = new Date() }) {
     }, [bookings]);
 
     const dateKey = date.toLocaleDateString();
+    // Zeigt nur Buchungen fuer den gewaehlten Raum und Tag und sortiert sie nach Startzeit.
+    const roomBookings = bookings
+        .filter((booking) => booking.date === dateKey && booking.room === room)
+        .sort((left, right) => {
+            const leftRange = getBookingRange(left);
+            const rightRange = getBookingRange(right);
 
-    function bookSlot(slot) {
+            if (!leftRange || !rightRange) {
+                return left.time.localeCompare(right.time);
+            }
+
+            return timeToMinutes(leftRange.startTime) - timeToMinutes(rightRange.startTime);
+        });
+
+    function bookSlot() {
         const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-        const confirmed = confirm(`Slot ${slot} als ${loggedInUser.username} buchen?`);
+        const startMinutes = timeToMinutes(startTime);
+        const endMinutes = timeToMinutes(endTime);
+
+        if (startMinutes >= endMinutes) {
+            alert("Die Endzeit muss nach der Startzeit kommen.");
+            return;
+        }
+
+        // Zwei Zeitraeume ueberlappen genau dann, wenn der neue Slot vor dem Ende beginnt
+        // und nach dem Anfang eines bestehenden Slots endet.
+        const hasOverlap = roomBookings.some((booking) => {
+            const range = getBookingRange(booking);
+            if (!range) {
+                return false;
+            }
+
+            const bookingStart = timeToMinutes(range.startTime);
+            const bookingEnd = timeToMinutes(range.endTime);
+            return startMinutes < bookingEnd && endMinutes > bookingStart;
+        });
+
+        if (hasOverlap) {
+            alert("Dieser Zeitraum überschneidet sich mit einer bestehenden Buchung.");
+            return;
+        }
+
+        const slotLabel = formatSlotLabel(startTime, endTime);
+        const confirmed = confirm(`Slot ${slotLabel} als ${loggedInUser.username} buchen?`);
         if (!confirmed) return;
-        setBookings([...bookings, { time: slot, user: loggedInUser.username, date: dateKey, room }]);
+
+        setBookings((currentBookings) => [
+            ...currentBookings,
+            {
+                time: slotLabel,
+                startTime,
+                endTime,
+                user: loggedInUser.username,
+                date: dateKey,
+                room,
+            },
+        ]);
+        setEndTime(startTime);
     }
 
     function unbookSlot(booking) {
@@ -46,35 +118,50 @@ export default function SlotList({ room = "", date = new Date() }) {
         const confirmed = confirm(`Deine Buchung für ${booking.time} wirklich entfernen?`);
         if (!confirmed) return;
 
+        // Entfernt genau die Buchung, die zu Raum, Tag, User und Zeitfenster passt.
         setBookings(bookings.filter((b) => !(b.time === booking.time && b.date === booking.date && b.room === booking.room && b.user === booking.user)));
     }
 
     return (
         <div className="slots">
-        
             <h2>{room} - {date.toLocaleDateString()}</h2>
+            <div className="slot-form">
+                <label>
+                    Von
+                    <input
+                        type="time"
+                        step="60"
+                        value={startTime}
+                        onChange={(event) => setStartTime(event.target.value)}
+                    />
+                </label>
+                <label>
+                    Bis
+                    <input
+                        type="time"
+                        step="60"
+                        value={endTime}
+                        onChange={(event) => setEndTime(event.target.value)}
+                    />
+                </label>
+                <button type="button" className="slot-create" onClick={bookSlot}>
+                    Zeitslot buchen
+                </button>
+            </div>
 
-            {slots.map((slot) => {
-                // Sucht Buchung nur für den konkreten Slot am gewählten Tag und Raum.
-                const booking = bookings.find((b) => b.time === slot && b.date === dateKey && b.room === room);
-
-                return (
+            {roomBookings.length === 0 ? (
+                <div className="slot free">Noch keine Buchungen für diesen Tag.</div>
+            ) : (
+                roomBookings.map((booking) => (
                     <div
-                        key={slot}
-                        onClick={() => {
-                            if (!booking) {
-                                bookSlot(slot);
-                            } else {
-                                unbookSlot(booking);
-                            }
-                        }}
-                        className={booking ? "slot booked" : "slot free"}
+                        key={`${booking.room}-${booking.date}-${booking.user}-${booking.time}`}
+                        onClick={() => unbookSlot(booking)}
+                        className="slot booked"
                     >
-                        {slot}
-                        {booking ? `- Belegt von ${booking.user}` : "- Frei(Klicken zum Buchen)"}
+                        {booking.time} - Belegt von {booking.user} (Klicken zum Entfernen)
                     </div>
-                );
-            })}
+                ))
+            )}
         </div>
     );
 }
