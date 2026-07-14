@@ -1,0 +1,28 @@
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 56px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgb(44, 28, 54);
+}
+
+.header h1,
+.header p {
+    margin: 0;
+}
+
+.header p {
+    color: white;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
