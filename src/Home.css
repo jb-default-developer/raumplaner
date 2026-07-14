@@ -1,3 +1,10 @@
+
+.content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+}
+
 .logout-button{
     width: 80px;
     height: 32px;
@@ -6,4 +13,144 @@
     background-color: rgb(255, 255, 255);
     color: rgb(143, 68, 156);
     border: 1px solid rgb(143, 68, 156);
+}
+
+.rooms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+.room {
+    flex: 1 1 120px;
+    padding: 15px;
+    cursor: pointer;
+    border-radius: 10px;
+    background-color: white;
+    font-size: 20px;
+    text-align: center;
+}
+.room.active {
+    background-color: rgb(143, 68, 156);
+    color: white;
+}
+
+.calendar {
+    margin-top: 30px;
+}
+
+.react-calendar {
+    width: 100%;
+    border: none;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    font-family: inherit;
+    background: white;
+}
+
+.react-calendar__navigation {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.react-calendar__navigation button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    color: rgb(143, 68, 156);
+    cursor: pointer;
+    border-radius: 8px;
+    padding: 6px 10px;
+    transition: background 0.2s;
+}
+
+.react-calendar__navigation button:hover {
+    background: rgba(143, 68, 156, 0.1);
+}
+
+.react-calendar__month-view__weekdays {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    padding-bottom: 6px;
+}
+
+.react-calendar__month-view__weekdays abbr {
+    text-decoration: none;
+}
+
+.react-calendar__tile {
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.react-calendar__tile:hover {
+    background: rgba(143, 68, 156, 0.1);
+    color: rgb(143, 68, 156);
+}
+
+.react-calendar__tile--now {
+    background: rgba(143, 68, 156, 0.15);
+    font-weight: bold;
+    color: rgb(143, 68, 156);
+}
+
+.react-calendar__tile--active {
+    background: rgb(143, 68, 156) !important;
+    color: white !important;
+    font-weight: bold;
+}
+
+.react-calendar__tile--active:hover {
+    background: rgb(120, 50, 135) !important;
+}
+
+.slots {
+    margin-top: 25px;
+}
+.slot {
+    margin: 8px 0;
+    padding: 14px;
+    border-radius: 8px;
+    background-color: white;
+    font-weight: bold;
+
+}
+
+.free {
+    background-color: #16a34a;
+    color: white;
+}
+
+.booked {
+    background-color: #dc2626;
+    color: white;
+}
+
+@media (max-width: 600px) {
+    .room {
+        font-size: 15px;
+        padding: 12px 8px;
+    }
+
+    .react-calendar__tile {
+        padding: 6px;
+        font-size: 12px;
+    }
+
+    .slot {
+        font-size: 13px;
+        padding: 10px;
+    }
 }

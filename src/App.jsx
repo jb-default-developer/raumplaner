@@ -4,10 +4,13 @@ import './App.css'
 import Home from './components/Home.jsx'
 
 function App() {
+  // Eingaben aus dem Login-Formular.
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Login-Status beim Start aus localStorage übernehmen.
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('loggedInUser'));
 
+  // Prüft Zugangsdaten und wechselt bei Erfolg in die Home-Ansicht.
   function handleLogin() {
     const success = login(username, password);
 
@@ -20,6 +23,8 @@ function App() {
   if (isLoggedIn) {
     return <Home />;
   }
+
+  // Login-Seite, solange kein aktiver Nutzer angemeldet ist.
   return (
     <div className="login-button" >
       <h1>JOHNNYBYTES RAUMPLANER</h1>

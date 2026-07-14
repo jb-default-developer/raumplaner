@@ -1,6 +1,7 @@
 import '../Header.css';
 
 function Header({ onLogout }) {
+    // Zeigt den aktuell angemeldeten Nutzer in der Kopfzeile.
     const user = JSON.parse(localStorage.getItem('loggedInUser'));
 
     return (
