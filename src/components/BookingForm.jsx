@@ -1,16 +1,20 @@
 import { useState } from "react";
 
+// Zeigt ein Modal-Formular zum Erfassen von Titel und Beschreibung einer Buchung.
 export default function BookingForm({
-	slotLabel,
-	onCancel,
-	onSubmit,
+	slotLabel,  // Anzeigetext des gewählten Zeitfensters
+	onCancel,   // Callback zum Schließen ohne Speichern
+	onSubmit,   // Callback mit den eingegebenen Details
 }) {
+	// Eingabefelder des Formulars als lokaler Zustand.
 	const [meetingTitle, setMeetingTitle] = useState("");
 	const [description, setDescription] = useState("");
 
+	// Validiert das Formular und gibt die Daten nach oben weiter.
 	function handleSubmit(event) {
 		event.preventDefault();
 
+		// Leere Titel werden abgelehnt.
 		const cleanTitle = meetingTitle.trim();
 		if (!cleanTitle) {
 			return;
@@ -31,7 +35,7 @@ export default function BookingForm({
 				aria-label="Buchungsdetails eingeben"
 				onClick={(event) => event.stopPropagation()}
 			>
-				<h3>Buchung bestaetigen</h3>
+				<h3>Buchung bestätigen</h3>
 				<p className="booking-modal-slot">{slotLabel}</p>
 
 				<form onSubmit={handleSubmit} className="booking-form">

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import BookingForm from "./BookingForm.jsx";
+import { useAuth } from "../context/useAuth.js";
 
-// Einheitlicher localStorage-Key für alle Buchungen.
+// Einheitlicher localStorage-Key für alle Buchungen
 const BOOKINGS_STORAGE_KEY = "raumplaner_bookings";
 
-// neue Buchungen mit start/endTime und alte Buchungen, die nur den Anzeigetext gespeichert haben.
+// Nimmt die Start- und Endzeit aus einer Buchung.
+// Unterstützt neue Buchungen mit start/endTime und alte Buchungen, die nur den Anzeigetext gespeichert haben.
 function getBookingRange(booking) {
     if (booking.startTime && booking.endTime) {
         return { startTime: booking.startTime, endTime: booking.endTime };
@@ -24,11 +26,23 @@ function timeToMinutes(value) {
     return hours * 60 + minutes;
 }
 
+// Erzeugt den Anzeigetext für ein Zeitfenster.
 function formatSlotLabel(startTime, endTime) {
     return `Von ${startTime} bis ${endTime}`;
 }
 
+function addMinutesToTime(value, minutesToAdd) {
+    const totalMinutes = timeToMinutes(value) + minutesToAdd;
+    const normalized = ((totalMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
+    const hours = String(Math.floor(normalized / 60)).padStart(2, "0");
+    const minutes = String(normalized % 60).padStart(2, "0");
+    return `${hours}:${minutes}`;
+}
+
+// Kernlogik für Zeitslots: buchen, anzeigen, Details öffnen und entbuchen.
 export default function SlotList({ room = "", date = new Date() }) {
+    const { user } = useAuth();
+
     // Beim ersten Rendern gespeicherte Buchungen laden.
     const [bookings, setBookings] = useState(() => {
         try {
@@ -49,7 +63,7 @@ export default function SlotList({ room = "", date = new Date() }) {
     }, [bookings]);
 
     const dateKey = date.toLocaleDateString();
-    // Zeigt nur Buchungen fuer den gewaehlten Raum und Tag und sortiert sie nach Startzeit.
+    // Zeigt nur Buchungen für den gewählten Raum und Tag und sortiert sie nach Startzeit.
     const roomBookings = bookings
         .filter((booking) => booking.date === dateKey && booking.room === room)
         .sort((left, right) => {
@@ -63,17 +77,31 @@ export default function SlotList({ room = "", date = new Date() }) {
             return timeToMinutes(leftRange.startTime) - timeToMinutes(rightRange.startTime);
         });
 
+    // Prüft Zeitvalidität und Überschneidungen, öffnet dann das Buchungsformular.
     function openBookingForm() {
-        const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
+        if (!user) {
+            alert("Bitte zuerst einloggen.");
+            return;
+        }
+
         const startMinutes = timeToMinutes(startTime);
         const endMinutes = timeToMinutes(endTime);
+
+        const slotStart = new Date(date);
+        const [startHours, startMins] = startTime.split(":").map(Number);
+        slotStart.setHours(startHours, startMins, 0, 0);
+
+        if (slotStart < new Date()) {
+            alert("Du kannst keine Slots in der Vergangenheit buchen.");
+            return;
+        }
 
         if (startMinutes >= endMinutes) {
             alert("Die Endzeit muss nach der Startzeit kommen.");
             return;
         }
 
-        // Zwei Zeitraeume ueberlappen genau dann, wenn der neue Slot vor dem Ende beginnt
+        // Zwei Zeiträume überlappen genau dann, wenn der neue Slot vor dem Ende beginnt
         // und nach dem Anfang eines bestehenden Slots endet.
         const hasOverlap = roomBookings.some((booking) => {
             const range = getBookingRange(booking);
@@ -96,12 +124,13 @@ export default function SlotList({ room = "", date = new Date() }) {
             slotLabel,
             dateKey,
             room,
-            user: loggedInUser.username,
+            user: user.username,
             startTime,
             endTime,
         });
     }
 
+    // Speichert die finale Buchung mit Titel und Beschreibung aus dem Formular.
     function submitBookingDetails(details) {
         if (!pendingBooking) {
             return;
@@ -120,19 +149,22 @@ export default function SlotList({ room = "", date = new Date() }) {
                 description: details.description,
             },
         ]);
+        const nextStart = pendingBooking.endTime;
+        const nextEnd = addMinutesToTime(nextStart, 30);
+
+        setStartTime(nextStart);
+        setEndTime(nextEnd);
         setPendingBooking(null);
-        setEndTime(startTime);
     }
 
+    // Schließt das Buchungsformular ohne zu speichern.
     function closeBookingForm() {
         setPendingBooking(null);
     }
 
     function unbookSlot(booking) {
-        const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
-
         // Nur der User der die Buchung erstellt hat, darf entbuchen.
-        if (!loggedInUser || booking.user !== loggedInUser.username) {
+        if (!user || booking.user !== user.username) {
             alert("Du kannst nur deine eigenen Buchungen entbuchen.");
             return;
         }
@@ -156,6 +188,7 @@ export default function SlotList({ room = "", date = new Date() }) {
         setSelectedBooking(null);
     }
 
+    // Öffnet die Detailansicht einer bestehenden Buchung.
     function openBookingDetails(booking) {
         setSelectedBooking(booking);
     }
@@ -163,6 +196,8 @@ export default function SlotList({ room = "", date = new Date() }) {
     return (
         <div className="slots">
             <h2>{room} - {date.toLocaleDateString()}</h2>
+
+            {/* Eingabe eines neuen Zeitfensters für den gewählten Tag. */}
             <div className="slot-form">
                 <label>
                     Von
@@ -187,6 +222,7 @@ export default function SlotList({ room = "", date = new Date() }) {
                 </button>
             </div>
 
+            {/* Liste aller bereits belegten Slots für Raum + Datum. */}
             {roomBookings.length === 0 ? (
                 <div className="slot free">Noch keine Buchungen für diesen Tag.</div>
             ) : (
@@ -201,6 +237,7 @@ export default function SlotList({ room = "", date = new Date() }) {
                 ))
             )}
 
+            {/* Modal zur Erfassung von Titel/Beschreibung vor dem finalen Speichern. */}
             {pendingBooking && (
                 <BookingForm
                     slotLabel={pendingBooking.slotLabel}
@@ -209,6 +246,7 @@ export default function SlotList({ room = "", date = new Date() }) {
                 />
             )}
 
+            {/* Detail-Modal einer bestehenden Buchung inkl. Entbuchen. */}
             {selectedBooking && (
                 <div className="booking-modal-backdrop" role="presentation" onClick={() => setSelectedBooking(null)}>
                     <div

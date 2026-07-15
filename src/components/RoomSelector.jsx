@@ -5,6 +5,7 @@ const rooms = [
     "MeetingBox 2",
 ];
 
+// Auswahlkomponente für den aktuell aktiven Raum.
 export default function RoomSelector({ selectedRoom, setSelectedRoom }) {
     // Rendert pro Raum einen Button und markiert die aktive Auswahl.
     return (
